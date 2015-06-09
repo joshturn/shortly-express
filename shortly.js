@@ -3,6 +3,9 @@ var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
 var bcrypt = require('bcrypt-nodejs');
+var session = require('express-session');
+var morgan = require('morgan');
+// var MSSQLStore = require('connect-mssql')(session);
 
 
 var db = require('./app/config');
@@ -13,6 +16,7 @@ var Link = require('./app/models/link');
 var Click = require('./app/models/click');
 
 var app = express();
+app.use(morgan());
 
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
@@ -23,27 +27,43 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
+app.use(session({
+  secret: "keep it safe",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {secure: true}
+}));
 
-// app.get('/',
-// function(req, res) {
-//   res.render('index');
-// });
 
-app.get('/',
-function(req, res) {
-  util.checkUser(req, res, 'index');
+app.get('/', function(req, res, next) {
+  console.log("hello world");
+  util.restricted(req, res, next);
+}, function(req, res, next) {
+  util.checkUser(req, res, next);
+}, function(req, res) {
   res.render('index');
 });
 
-app.get('/create',
-function(req, res) {
-  util.checkUser(req, res, 'index');
+// app.get('/elephant', function(req, res, next) {
+//   util.restricted(req, res, next);
+// }, function(req, res) {
+//   res.render('index');
+// });
+
+app.get('/create', function(req, res, next) {
+  console.log("hello world");
+  util.restricted(req, res, next);
+}, function(req, res, next) {
+  util.checkUser(req, res, next);
+},function(req, res) {
   res.render('index');
 });
 
 app.get('/links',
+// function(req, res, next) {
+//   util.checkUser(req, res, next);
+// },
 function(req, res) {
-  // util.checkUser(req, res, 'index');
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
   });
@@ -87,6 +107,7 @@ function(req, res) {
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
+
 app.get('/login',
 function(req, res) {
   res.render('login');
@@ -98,14 +119,21 @@ function(req, res) {
 });
 
 app.post('/login',
-function(req, res){
-  util.checkUser(req, res, 'create');
-})
+function(req, res, next){
+  util.checkUser(req, res, next);
+}, function(req, res) {
+  res.render('index');
+});
+// , function(req, res, next){
+//   util.createLogout(req, res, next);
+// },
 
 app.post('/signup',
-function(req, res){
-  util.createUser(req, res, 'create');
-})
+function(req, res, next){
+  util.createUser(req, res, next);
+}, function(req, res) {
+  res.render('index');
+});
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
