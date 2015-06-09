@@ -31,6 +31,7 @@ app.use(express.static(__dirname + '/public'));
 
 app.get('/',
 function(req, res) {
+  util.checkUser(req, res, 'index');
   res.render('index');
 });
 
@@ -42,6 +43,7 @@ function(req, res) {
 
 app.get('/links',
 function(req, res) {
+  // util.checkUser(req, res, 'index');
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
   });
